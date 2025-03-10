@@ -1,36 +1,132 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Weather App
+
+A modern, responsive weather application built with **Next.js 14**, **TypeScript**, and the **OpenWeatherMap API**. This portfolio project demonstrates modern web development techniques including the App Router, SWR for data fetching, and a clean, responsive UI that leverages geolocation for real-time weather data.
+
+---
+
+## Features
+
+- **Real-time Weather Data:**  
+  Displays current weather based on your geolocation.
+- **5-Day Forecast:**  
+  View the upcoming weather trends for the next 5 days.
+- **Temperature Unit Toggle:**  
+  Easily switch between Celsius (°C) and Fahrenheit (°F).
+- **Responsive Design:**  
+  Optimized for desktop, tablet, and mobile devices.
+- **Loading & Error States:**  
+  Smooth user experience with clear loading indicators and error handling.
+
+---
+
+## Tech Stack
+
+- **Frontend Framework:** Next.js 14 with App Router
+- **Language:** TypeScript
+- **Data Fetching:** SWR for efficient, real-time data updates
+- **Styling:** Modern CSS (optionally Tailwind CSS) for responsive design
+- **API:** OpenWeatherMap API for weather data
+- **Geolocation:** Browser Geolocation API
+
+---
+
+## Project Structure
+
+weather-app/
+├── src/
+│ ├── app/
+│ │ ├── layout.tsx // Root layout with global metadata
+│ │ ├── page.tsx // Main weather page
+│ │ ├── globals.css // Global styles
+│ │ ├── loading.tsx // Global loading UI
+│ │ ├── error.tsx // Global error UI
+│ │ └── api/
+│ │ └── weather/
+│ │ └── route.ts // Weather API endpoint
+│ ├── components/
+│ │ ├── layout/
+│ │ │ └── Header.tsx // Global header component
+│ │ ├── weather/
+│ │ │ └── WeatherCard.tsx // Component for current weather display
+│ │ └── forecast/
+│ │ └── ForecastList.tsx // Forecast component
+│ ├── lib/
+│ │ ├── hooks.ts // Custom hooks for data fetching
+│ │ ├── weather.ts // Weather API utility functions
+│ │ └── utils.ts // Helper functions
+│ └── types/
+│ └── weather.ts // TypeScript types for weather data
+├── public/
+│ └── icons/ // Weather icons and static assets
+└── tsconfig.json // TypeScript configuration
+
+---
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Node.js:** Node.js 18+
+- **Package Manager:** npm or yarn
+- **OpenWeatherMap API Key**
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Installation
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. **Clone the repository:**
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+   ```bash
+   git clone https://github.com/your-username/weather-app.git
+   cd weather-app
+   ```
 
-## Learn More
+2. **Install the dependencies:**
 
-To learn more about Next.js, take a look at the following resources:
+   ```Using npm:
+   npm install
+   Or using yarn:
+   yarn install
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+3. **Set up environment variables:**
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+   ````Create a .env.local file in the root directory and add your OpenWeatherMap API key:
+   NEXT_PUBLIC_OPENWEATHER_API_KEY=your_api_key_here```
 
-## Deploy on Vercel
+   ````
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+4. **Run the development server:**
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+   ```Using npm:
+   npm run dev
+   Or using yarn:
+   yarn dev
+   ```
+
+   5. **Open your browser:**
+      `Navigate to http://localhost:3000 to view the app.`
+
+   ## Usage
+
+   When the app is running, it will display weather data based on your current geolocation. Use the temperature unit toggle to switch between Celsius and Fahrenheit. Explore the 5-day forecast to plan ahead.
+
+   ## Deployment
+
+   This application can be easily deployed on platforms like Vercel. When deploying, ensure you add your NEXT_PUBLIC_OPENWEATHER_API_KEY to the environment variables in your deployment settings.
+
+   ## Future Enhancements
+
+   Weather Alerts & Notifications
+   Historical Weather Data Visualization
+   Multiple Location Management
+   Dark/Light Theme Toggle
+
+   ## License
+
+   MIT
+
+   ## Acknowledgements
+
+   Next.js for the framework and tools
+   OpenWeatherMap API for weather data
+   SWR for efficient data fetching
+   Vercel for deployment

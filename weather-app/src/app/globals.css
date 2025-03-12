@@ -66,3 +66,67 @@
     @apply bg-background text-foreground;
   }
 }
+
+
+/* Custom styles for the app that may be used in the future */
+
+/* Weather-specific custom styles */
+@layer components {
+  .weather-icon {
+    @apply w-12 h-12 md:w-16 md:h-16;
+  }
+  
+  .weather-condition {
+    @apply flex items-center gap-2 mb-2;
+  }
+  
+  .temperature-large {
+    @apply text-4xl font-bold;
+  }
+  
+  .temperature-small {
+    @apply text-lg font-medium;
+  }
+  
+  .weather-detail {
+    @apply flex items-center gap-2 text-sm text-muted-foreground;
+  }
+  
+  .forecast-day {
+    @apply flex flex-col items-center p-3 rounded-md border bg-card hover:bg-accent/50 transition-colors;
+  }
+  
+  /* Animations for weather conditions */
+  .animate-rain {
+    @apply animate-bounce opacity-70;
+  }
+  
+  .animate-snow {
+    @apply animate-pulse opacity-80;
+  }
+  
+  .animate-wind {
+    @apply animate-spin-slow;
+  }
+  
+  .animate-sun {
+    @apply animate-pulse text-yellow-500;
+  }
+  
+  .animate-clouds {
+    @apply animate-pulse opacity-80;
+  }
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
+}

@@ -38,28 +38,28 @@ A modern, responsive weather application built with **Next.js 14**, **TypeScript
 
 ## Project Structure
 
-weather-app/
-├── src/
-│   ├── app/
-│   │   ├── layout.tsx          # Root layout with global setup
-│   │   ├── page.tsx            # Main weather display page
-│   │   ├── globals.css         # Global and custom styles
-│   │   ├── loading.tsx         # Loading UI
-│   │   └── error.tsx           # Error boundaries
-│   ├── components/
-│   │   ├── Header.tsx          # App header with theme toggle
-│   │   ├── Provider.tsx        # Theme provider
-│   │   └── ui/                 # shadcn/ui components
-│   │       ├── button.tsx
-│   │       ├── card.tsx
-│   │       ├── skeleton.tsx
-│   │       └── sonner.tsx
-│   └── lib/
-│       ├── hooks.ts            # Custom hooks for weather functionality
-│       ├── types.ts            # TypeScript type definitions
-│       └── utils.ts            # Utility functions
-├── tailwind.config.ts         # Tailwind configuration
-└── components.json            # shadcn/ui configuration
+weather-app/  
+├── src/  
+│   ├── app/  
+│   │   ├── layout.tsx          # Root layout with global setup  
+│   │   ├── page.tsx            # Main weather display page  
+│   │   ├── globals.css         # Global and custom styles  
+│   │   ├── loading.tsx         # Loading UI  
+│   │   └── error.tsx           # Error boundaries  
+│   ├── components/  
+│   │   ├── Header.tsx          # App header with theme toggle  
+│   │   ├── Provider.tsx        # Theme provider  
+│   │   └── ui/                 # shadcn/ui components  
+│   │       ├── button.tsx  
+│   │       ├── card.tsx  
+│   │       ├── skeleton.tsx  
+│   │       └── sonner.tsx  
+│   └── lib/  
+│       ├── hooks.ts            # Custom hooks for weather functionality  
+│       ├── types.ts            # TypeScript type definitions  
+│       └── utils.ts            # Utility functions  
+├── tailwind.config.ts         # Tailwind configuration  
+└── components.json            # shadcn/ui configuration  
 ```
 
 ## Getting Started

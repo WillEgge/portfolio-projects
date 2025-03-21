@@ -35,11 +35,13 @@ export default function Home() {
   // Helper: Render the current weather icon as JSX
   const renderWeatherIcon = (icon: WeatherCondition) => {
     if (icon === "rain")
-      <CloudRainIcon className="weather-icon animate-rain" />;
+      return <CloudRainIcon className="weather-icon animate-rain" />;
     if (icon === "snow")
-      <CloudSnowIcon className="weather-icon animate-snow" />;
-    if (icon === "sun") <SunIcon className="weather-icon animate-spin" />;
-    if (icon === "wind") <WindIcon className="weather-icon animate-spin" />;
+      return <CloudSnowIcon className="weather-icon animate-snow" />;
+    if (icon === "sun")
+      return <SunIcon className="weather-icon animate-spin" />;
+    if (icon === "wind")
+      return <WindIcon className="weather-icon animate-spin" />;
     return <CloudIcon className="weather-icon" />;
   };
 

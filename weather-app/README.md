@@ -15,7 +15,10 @@ A modern, responsive weather application built with **Next.js 14**, **TypeScript
 - **Responsive Design:**  
   Optimized for desktop, tablet, and mobile devices.
 - **Loading & Error States:**  
-  Smooth user experience with clear loading indicators and error handling.
+  Smooth user experience with skeleton loaders and error handling.
+
+- **Dark/Light Theme:**  
+  Toggle between dark and light modes for comfortable viewing.
 
 ---
 
@@ -24,7 +27,10 @@ A modern, responsive weather application built with **Next.js 14**, **TypeScript
 - **Frontend Framework:** Next.js 14 with App Router
 - **Language:** TypeScript
 - **Data Fetching:** SWR for efficient, real-time data updates
-- **Styling:** Modern CSS (optionally Tailwind CSS) for responsive design
+- **Styling:** Tailwind CSS with shadcn/ui components
+- **Toast Notifications:** Sonner for user feedback
+- **Theming:** next-themes for dark/light mode support
+- **Icons:** Lucide React for beautiful, consistent iconography
 - **API:** OpenWeatherMap API for weather data
 - **Geolocation:** Browser Geolocation API
 
@@ -34,33 +40,27 @@ A modern, responsive weather application built with **Next.js 14**, **TypeScript
 
 weather-app/
 ├── src/
-│ ├── app/
-│ │ ├── layout.tsx // Root layout with global metadata
-│ │ ├── page.tsx // Main weather page
-│ │ ├── globals.css // Global styles
-│ │ ├── loading.tsx // Global loading UI
-│ │ ├── error.tsx // Global error UI
-│ │ └── api/
-│ │ └── weather/
-│ │ └── route.ts // Weather API endpoint
-│ ├── components/
-│ │ ├── layout/
-│ │ │ └── Header.tsx // Global header component
-│ │ ├── weather/
-│ │ │ └── WeatherCard.tsx // Component for current weather display
-│ │ └── forecast/
-│ │ └── ForecastList.tsx // Forecast component
-│ ├── lib/
-│ │ ├── hooks.ts // Custom hooks for data fetching
-│ │ ├── weather.ts // Weather API utility functions
-│ │ └── utils.ts // Helper functions
-│ └── types/
-│ └── weather.ts // TypeScript types for weather data
-├── public/
-│ └── icons/ // Weather icons and static assets
-└── tsconfig.json // TypeScript configuration
-
----
+│   ├── app/
+│   │   ├── layout.tsx          # Root layout with global setup
+│   │   ├── page.tsx            # Main weather display page
+│   │   ├── globals.css         # Global and custom styles
+│   │   ├── loading.tsx         # Loading UI
+│   │   └── error.tsx           # Error boundaries
+│   ├── components/
+│   │   ├── Header.tsx          # App header with theme toggle
+│   │   ├── Provider.tsx        # Theme provider
+│   │   └── ui/                 # shadcn/ui components
+│   │       ├── button.tsx
+│   │       ├── card.tsx
+│   │       ├── skeleton.tsx
+│   │       └── sonner.tsx
+│   └── lib/
+│       ├── hooks.ts            # Custom hooks for weather functionality
+│       ├── types.ts            # TypeScript type definitions
+│       └── utils.ts            # Utility functions
+├── tailwind.config.ts         # Tailwind configuration
+└── components.json            # shadcn/ui configuration
+```
 
 ## Getting Started
 
@@ -89,16 +89,19 @@ weather-app/
 
 3. **Set up environment variables:**
 
-   ````Create a .env.local file in the root directory and add your OpenWeatherMap API key:
-   NEXT_PUBLIC_OPENWEATHER_API_KEY=your_api_key_here```
+   Create a `.env.local` file in the root directory and add your OpenWeatherMap API key:
 
-   ````
+   ```
+   NEXT_PUBLIC_OPENWEATHER_API_KEY=your_api_key_here
+   ```
 
 4. **Run the development server:**
 
-   ```Using npm:
+   ```
+   # Using npm
    npm run dev
-   Or using yarn:
+
+   # Or using yarn
    yarn dev
    ```
 
@@ -118,7 +121,9 @@ weather-app/
    Weather Alerts & Notifications
    Historical Weather Data Visualization
    Multiple Location Management
-   Dark/Light Theme Toggle
+   Search functionality for locations
+   Detailed hourly forecasts
+   Weather maps and radar
 
    ## License
 
@@ -129,4 +134,6 @@ weather-app/
    Next.js for the framework and tools
    OpenWeatherMap API for weather data
    SWR for efficient data fetching
+   shadcn/ui for accessible UI components
+   Tailwind CSS for styling
    Vercel for deployment

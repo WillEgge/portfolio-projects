@@ -1,62 +1,94 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
+import useSWR from "swr";
 import type { WeatherData, TemperatureUnit } from "@/lib/types";
+import { getCurrentPosition, getWeatherFromCoords } from "@/lib/api/weather";
 
-// Mock weather data
-const mockWeather: WeatherData = {
-  location: "New York",
-  current: {
-    temp: 20,
-    feels_like: 18,
-    humidity: 80,
-    wind_speed: 10,
-    weather: "Cloudy",
-    icon: "clouds",
-  },
-  forcast: [
-    { date: "Today", temp: 20, icon: "clouds" },
-    { date: "Tomorrow", temp: 22, icon: "sun" },
-    { date: "Wednesday", temp: 24, icon: "sun" },
-    { date: "Thursday", temp: 25, icon: "sun" },
-    { date: "Friday", temp: 23, icon: "clouds" },
-  ],
+// Default coordinates (New York) as fallback
+const DEFAULT_COORDS = { lat: 40.7128, lon: -74.0060 };
+
+// Custom fetcher for SWR that includes error handling
+const weatherFetcher = async ([_, lat, lon]: [string, number, number]) => {
+  try {
+    return await getWeatherFromCoords(lat, lon);
+  } catch (error) {
+    console.error("Error fetching weather data:", error);
+    throw new Error("Failed to fetch weather data. Please try again later.");
+  }
 };
 
 // Custom hook to manage weather data, location, and loading state
 export function useWeatherData() {
-  const [loading, setLoading] = useState<boolean>(true);
-  const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [location, setLocation] = useState<string>("");
+  const [coordinates, setCoordinates] = useState<{lat: number, lon: number} | null>(null);
   const [showInfo, setShowInfo] = useState<boolean>(true);
+  const [isGettingLocation, setIsGettingLocation] = useState<boolean>(false);
 
+  // SWR hook for fetching weather data
+  const { data: weather, error, isValidating } = useSWR(
+    coordinates ? ['weather', coordinates.lat, coordinates.lon] : null,
+    weatherFetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+      refreshInterval: 300000, // Refresh every 5 minutes
+    }
+  );
+
+  // Determine if we're in a loading state
+  const loading = (!weather && !error) || isValidating || isGettingLocation;
+  
+  // Get location name from weather data
+  const location = weather?.location || "";
+
+  // Effect to get initial location on component mount
   useEffect(() => {
-    // Simulate loading weather data with a delay
-    const timer = setTimeout(() => {
-      setWeather(mockWeather);
-      setLocation(mockWeather.location);
-      setLoading(false);
-    }, 1500);
-
-    return () => clearTimeout(timer);
+    // Try to get user's location on first load
+    getUserLocation();
+    
+    // Fallback to default location after a timeout if geolocation fails
+    const fallbackTimer = setTimeout(() => {
+      if (!coordinates) {
+        setCoordinates(DEFAULT_COORDS);
+        toast.info("Using default location. Enable location services for local weather.");
+      }
+    }, 3000);
+    
+    return () => clearTimeout(fallbackTimer);
   }, []);
 
-  // Simulate a geolocation update
-  const getUserLocation = () => {
-    setLoading(true);
-
-    if ("geolocation" in navigator) {
-      toast.info("Getting your location...");
-      //In a real app, implement geolocation and API calls here
-      // For now,  we're just simulating it with a delay
-      setTimeout(() => {
-        setLoading(false);
-        toast.success("Wether updated for your location");
-      }, 1500);
-    } else {
-      toast.error("Geolocation is not supported by your browser");
-      setLoading(false);
+  // Handle errors from SWR
+  useEffect(() => {
+    if (error) {
+      toast.error("Could not fetch weather data. Please try again later.");
+      console.error("Weather data error:", error);
     }
-  };
+  }, [error]);
+
+  // Get user's current location
+  const getUserLocation = useCallback(async () => {
+    setIsGettingLocation(true);
+    
+    try {
+      if ("geolocation" in navigator) {
+        toast.info("Getting your location...");
+        
+        const position = await getCurrentPosition();
+        const { latitude, longitude } = position.coords;
+        
+        setCoordinates({ lat: latitude, lon: longitude });
+        toast.success("Weather updated for your location");
+      } else {
+        toast.error("Geolocation is not supported by your browser");
+        setCoordinates(DEFAULT_COORDS);
+      }
+    } catch (error) {
+      console.error("Geolocation error:", error);
+      toast.error("Could not get your location. Check browser permissions.");
+      setCoordinates(DEFAULT_COORDS);
+    } finally {
+      setIsGettingLocation(false);
+    }
+  }, []);
 
   const toggleInfoPanel = () => {
     setShowInfo((prev) => !prev);
@@ -69,11 +101,11 @@ export function useWeatherData() {
     showInfo,
     getUserLocation,
     toggleInfoPanel,
+    error,
   };
 }
 
-// Custom hook to manage toggling and conversion
-
+// Custom hook to manage temperature unit toggling and conversion
 export function useTemperatureUnit() {
   const [unit, setUnit] = useState<TemperatureUnit>("metric");
 
@@ -92,14 +124,14 @@ export function useTemperatureUnit() {
   return { unit, toggleUnit, displayTemp };
 }
 
+// Custom hook for weather icon selection
 export function useWeatherIcon() {
   const getWeatherIcon = (icon: string) => {
-    // Note: Icon JSX should be returned in the component.
-    // This hook just encapsulates the logic for condition matching.
-    if (icon === "rain") "rain";
-    if (icon === "snow") "snow";
-    if (icon === "sun") "sun";
-    if (icon === "wind") "wind";
+    // Fixed the missing return statements in the conditions
+    if (icon === "rain") return "rain";
+    if (icon === "snow") return "snow";
+    if (icon === "sun") return "sun";
+    if (icon === "wind") return "wind";
     return "clouds";
   };
 

@@ -37,3 +37,6 @@ next-env.d.ts
 
 # test files
 src/lib/api-test.ts
+
+#notes
+note.txt

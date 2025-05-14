@@ -111,14 +111,12 @@ export default function Home() {
               </div>
             ) : (
               <div className="flex flex-col gap-4">
-                <div>
+                <div className="flex items-center gap-3">
                   {renderWeatherIcon(weather.current.icon)}
                   <span className="text-4xl font-bold">
                     {displayTemp(weather.current.temp)}
                   </span>
                 </div>
-
-                <div>{displayTemp(weather.current.temp)}</div>
 
                 <div>Feels like {displayTemp(weather.current.feels_like)}</div>
 

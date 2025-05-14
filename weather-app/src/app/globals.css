@@ -2,6 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Prevent theme flashing during load */
+:root {
+  color-scheme: light;
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+/* Block all transitions until the theme is fully loaded to prevent flashing */
+html:not([data-theme-loaded=true]) * {
+  transition: none !important;
+}
+
+/* Apply smooth transitions between themes after the initial load */
+[data-theme-loaded=true] * {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 0.15s;
+  transition-timing-function: ease-out;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -128,5 +149,5 @@
 }
 
 .animate-spin-slow {
-  animation: spin-slow 3s linear infinite;
+  animation: spin-slow 5s linear infinite;
 }

@@ -1,14 +1,21 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
-import type { WeatherData, TemperatureUnit } from "@/lib/types";
+import type { WeatherData, TemperatureUnit, WeatherCondition } from "@/lib/types";
 import { getCurrentPosition, getWeatherFromCoords } from "@/lib/api/weather";
 
-// Default coordinates (New York) as fallback
+/**
+ * Default coordinates (New York City) to use when geolocation fails
+ */
 const DEFAULT_COORDS = { lat: 40.7128, lon: -74.0060 };
 
-// Custom fetcher for SWR that includes error handling
-const weatherFetcher = async ([_, lat, lon]: [string, number, number]) => {
+/**
+ * Custom fetcher for SWR that includes error handling
+ * 
+ * @param params - Array containing the key and coordinates
+ * @returns The weather data for the specified location
+ */
+const weatherFetcher = async ([_, lat, lon]: [string, number, number]): Promise<WeatherData> => {
   try {
     return await getWeatherFromCoords(lat, lon);
   } catch (error) {
@@ -17,7 +24,17 @@ const weatherFetcher = async ([_, lat, lon]: [string, number, number]) => {
   }
 };
 
-// Custom hook to manage weather data, location, and loading state
+/**
+ * Custom hook to manage weather data, location, and loading state
+ * 
+ * Provides functionality for:
+ * - Fetching weather data based on coordinates
+ * - Getting user's location via geolocation
+ * - Handling loading and error states
+ * - Controlling info panel visibility
+ * 
+ * @returns Weather data and control functions
+ */
 export function useWeatherData() {
   const [coordinates, setCoordinates] = useState<{lat: number, lon: number} | null>(null);
   const [showInfo, setShowInfo] = useState<boolean>(true);
@@ -40,31 +57,9 @@ export function useWeatherData() {
   // Get location name from weather data
   const location = weather?.location || "";
 
-  // Effect to get initial location on component mount
-  useEffect(() => {
-    // Try to get user's location on first load
-    getUserLocation();
-    
-    // Fallback to default location after a timeout if geolocation fails
-    const fallbackTimer = setTimeout(() => {
-      if (!coordinates) {
-        setCoordinates(DEFAULT_COORDS);
-        toast.info("Using default location. Enable location services for local weather.");
-      }
-    }, 3000);
-    
-    return () => clearTimeout(fallbackTimer);
-  }, []);
-
-  // Handle errors from SWR
-  useEffect(() => {
-    if (error) {
-      toast.error("Could not fetch weather data. Please try again later.");
-      console.error("Weather data error:", error);
-    }
-  }, [error]);
-
-  // Get user's current location
+  /**
+   * Get user's current location using browser geolocation
+   */
   const getUserLocation = useCallback(async () => {
     setIsGettingLocation(true);
     
@@ -90,9 +85,37 @@ export function useWeatherData() {
     }
   }, []);
 
+  /**
+   * Toggle the visibility of the info panel
+   */
   const toggleInfoPanel = () => {
     setShowInfo((prev) => !prev);
   };
+
+  // Effect to get initial location on component mount
+  useEffect(() => {
+    // Try to get user's location on first load
+    getUserLocation();
+    
+    // Fallback to default location after a timeout if geolocation fails
+    const fallbackTimer = setTimeout(() => {
+      if (!coordinates) {
+        setCoordinates(DEFAULT_COORDS);
+        toast.info("Using default location. Enable location services for local weather.");
+      }
+    }, 3000);
+    
+    return () => clearTimeout(fallbackTimer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Handle errors from SWR
+  useEffect(() => {
+    if (error) {
+      toast.error("Could not fetch weather data. Please try again later.");
+      console.error("Weather data error:", error);
+    }
+  }, [error]);
 
   return {
     loading,
@@ -105,17 +128,35 @@ export function useWeatherData() {
   };
 }
 
-// Custom hook to manage temperature unit toggling and conversion
+/**
+ * Custom hook to manage temperature unit toggling and conversion
+ * 
+ * Provides:
+ * - Current temperature unit (metric/imperial)
+ * - Function to toggle between units
+ * - Function to format temperature display
+ * 
+ * @returns Temperature unit state and utility functions
+ */
 export function useTemperatureUnit() {
   const [unit, setUnit] = useState<TemperatureUnit>("metric");
 
+  /**
+   * Toggle between metric (°C) and imperial (°F) units
+   */
   const toggleUnit = () => {
     setUnit((prev: TemperatureUnit) =>
       prev === "metric" ? "imperial" : "metric"
     );
   };
 
-  const displayTemp = (temp: number) => {
+  /**
+   * Format a temperature for display in the current unit
+   * 
+   * @param temp - Temperature in metric units (Celsius)
+   * @returns Formatted temperature string with unit symbol
+   */
+  const displayTemp = (temp: number): string => {
     return unit === "imperial"
       ? `${Math.round((temp * 9) / 5 + 32)}°F`
       : `${Math.round(temp)}°C`;
@@ -124,15 +165,28 @@ export function useTemperatureUnit() {
   return { unit, toggleUnit, displayTemp };
 }
 
-// Custom hook for weather icon selection
+/**
+ * Custom hook for weather icon selection
+ * 
+ * Maps weather condition strings to standardized icon types
+ * 
+ * @returns Function to get the appropriate icon type
+ */
 export function useWeatherIcon() {
-  const getWeatherIcon = (icon: string) => {
-    // Fixed the missing return statements in the conditions
-    if (icon === "rain") return "rain";
-    if (icon === "snow") return "snow";
-    if (icon === "sun") return "sun";
-    if (icon === "wind") return "wind";
-    return "clouds";
+  /**
+   * Convert a weather condition string to a standardized icon type
+   * 
+   * @param icon - The weather condition string
+   * @returns The standardized WeatherCondition type
+   */
+  const getWeatherIcon = (icon: string): WeatherCondition => {
+    switch (icon) {
+      case "rain": return "rain";
+      case "snow": return "snow";
+      case "sun": return "sun";
+      case "wind": return "wind";
+      default: return "clouds";
+    }
   };
 
   return { getWeatherIcon };

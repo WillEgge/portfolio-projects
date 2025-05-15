@@ -4,10 +4,6 @@ import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  CloudRainIcon,
-  CloudSnowIcon,
-  CloudIcon,
-  SunIcon,
   MapPinIcon,
   WindIcon,
   DropletIcon,
@@ -16,9 +12,8 @@ import {
 import {
   useWeatherData,
   useTemperatureUnit,
-  useWeatherIcon,
 } from "@/lib/hooks";
-import { WeatherCondition } from "@/lib/types";
+import { WeatherIcon } from "@/components/WeatherIcon";
 
 export default function Home() {
   const {
@@ -30,23 +25,10 @@ export default function Home() {
     toggleInfoPanel,
   } = useWeatherData();
   const { unit, toggleUnit, displayTemp } = useTemperatureUnit();
-  const { getWeatherIcon } = useWeatherIcon();
-
-  // Helper: Render the current weather icon as JSX
-  const renderWeatherIcon = (icon: WeatherCondition) => {
-    if (icon === "rain")
-      return <CloudRainIcon className="weather-icon animate-rain" />;
-    if (icon === "snow")
-      return <CloudSnowIcon className="weather-icon animate-snow" />;
-    if (icon === "sun")
-      return <SunIcon className="weather-icon animate-spin" />;
-    if (icon === "wind")
-      return <WindIcon className="weather-icon animate-spin" />;
-    return <CloudIcon className="weather-icon" />;
-  };
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Info Panel */}
       {showInfo && (
         <section className="mb-8 bg-card border rounded-lg p-6 relative">
           <Button
@@ -66,33 +48,39 @@ export default function Home() {
             TypeScript. View current weather conditions and a 5-day forecast
             based on your location.
           </p>
-          <div>
+          <div className="flex items-center text-sm text-muted-foreground">
             <InfoIcon className="w-4 h-4 mr-2" />
-            <span>This is a portfolio project with mock data.</span>
+            <span>This is a portfolio project with real weather data.</span>
           </div>
         </section>
       )}
 
-      {/*location and controles */}
-      <section>
-        <div>
-          <MapPinIcon />
-          {loading ? (
-            <Skeleton className="h-8 w-40" />
-          ) : (
-            <h2 className="text-2xl font-bold">{location}</h2>
-          )}
-          <Button variant="outline" onClick={toggleUnit} disabled={loading}>
-            {unit === "metric" ? "Switch to °F" : "Switch to °C"}
-          </Button>
-          <Button onClick={getUserLocation} disabled={loading}>
-            My Location
-          </Button>
+      {/* Location and Controls */}
+      <section className="my-6">
+        <div className="flex flex-col md:flex-row md:items-center gap-4">
+          <div className="flex items-center gap-2">
+            <MapPinIcon className="text-primary" />
+            {loading ? (
+              <Skeleton className="h-8 w-40" />
+            ) : (
+              <h2 className="text-2xl font-bold">{location}</h2>
+            )}
+          </div>
+          
+          <div className="flex gap-2 ml-auto">
+            <Button variant="outline" onClick={toggleUnit} disabled={loading}>
+              {unit === "metric" ? "Switch to °F" : "Switch to °C"}
+            </Button>
+            <Button onClick={getUserLocation} disabled={loading}>
+              My Location
+            </Button>
+          </div>
         </div>
       </section>
 
-      {/*Current weather */}
-      <section>
+      {/* Main content with spacing */}
+      <div className="grid grid-cols-1 gap-8">
+        {/* Current Weather Card */}
         <Card>
           <CardHeader>
             <CardTitle>Current Weather</CardTitle>
@@ -112,7 +100,7 @@ export default function Home() {
             ) : (
               <div className="flex flex-col gap-4">
                 <div className="flex items-center gap-3">
-                  {renderWeatherIcon(weather.current.icon)}
+                  <WeatherIcon condition={weather.current.icon} />
                   <span className="text-4xl font-bold">
                     {displayTemp(weather.current.temp)}
                   </span>
@@ -121,12 +109,12 @@ export default function Home() {
                 <div>Feels like {displayTemp(weather.current.feels_like)}</div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                  <div>
-                    <DropletIcon />
-                    <span>{weather.current.humidity}%</span>
+                  <div className="flex items-center gap-2">
+                    <DropletIcon className="text-primary h-5 w-5" />
+                    <span>Humidity: {weather.current.humidity}%</span>
                   </div>
-                  <div>
-                    <WindIcon />
+                  <div className="flex items-center gap-2">
+                    <WindIcon className="text-primary h-5 w-5" />
                     <span>Wind: {weather.current.wind_speed} km/h</span>
                   </div>
                 </div>
@@ -134,16 +122,14 @@ export default function Home() {
             )}
           </CardContent>
         </Card>
-      </section>
 
-      {/*5-day forcast */}
-      <section>
+        {/* Forecast Card */}
         <Card>
           <CardHeader>
             <CardTitle>5-Day Forecast</CardTitle>
           </CardHeader>
           <CardContent>
-            <div>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-2">
               {loading || !weather
                 ? Array(5)
                     .fill(null)
@@ -151,10 +137,12 @@ export default function Home() {
                       <Skeleton key={index} className="h-32 w-full" />
                     ))
                 : weather.forcast.map((day, index) => (
-                    <div key={index} className="forcast-day">
+                    <div key={index} className="forecast-day">
                       <div className="font-medium">{day.date}</div>
-                      <div className="my-2">{renderWeatherIcon(day.icon)}</div>
-                      <div className="temperature-small">
+                      <div className="my-2 flex justify-center">
+                        <WeatherIcon condition={day.icon} />
+                      </div>
+                      <div className="temperature-small text-center">
                         {displayTemp(day.temp)}
                       </div>
                     </div>
@@ -162,7 +150,7 @@ export default function Home() {
             </div>
           </CardContent>
         </Card>
-      </section>
+      </div>
     </div>
   );
 }

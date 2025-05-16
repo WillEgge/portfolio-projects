@@ -1,7 +1,25 @@
 "use client";
 
+/**
+ * Providers component for application-wide context providers
+ * 
+ * This component wraps the entire application and provides theme context
+ * with SSR-safe rendering to prevent flashing of wrong theme.
+ * 
+ * @module Providers
+ */
 import { ThemeProvider } from "next-themes";
 
+/**
+ * Provider component for theme management
+ * 
+ * Wraps the application with ThemeProvider from next-themes,
+ * and includes a script for setting the initial theme before hydration
+ * to prevent theme flashing.
+ * 
+ * @param children - React children to be wrapped by the providers
+ * @returns Provider-wrapped application components
+ */
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider 

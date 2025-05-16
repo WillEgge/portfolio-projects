@@ -80,6 +80,38 @@ export type ForcastDay = {
 };
 
 /**
+ * Weather data for a single hour
+ */
+export type HourlyForecast = {
+  /** Time of the forecast in UNIX timestamp */
+  time: number;
+  
+  /** Formatted time string (e.g. "9AM") */
+  formattedTime: string;
+  
+  /** Temperature in metric units (Celsius) */
+  temp: number;
+  
+  /** Feels like temperature in metric units (Celsius) */
+  feels_like: number;
+  
+  /** Precipitation probability (0-1) */
+  pop: number;
+  
+  /** Humidity percentage (0-100) */
+  humidity: number;
+  
+  /** Wind speed in metric units (km/h) */
+  wind_speed: number;
+  
+  /** Weather condition icon type */
+  icon: WeatherCondition;
+  
+  /** Weather description */
+  description: string;
+};
+
+/**
  * Complete weather data for a location including current conditions and forecast
  */
 export type WeatherData = {
@@ -91,6 +123,9 @@ export type WeatherData = {
   
   /** 5-day weather forecast */
   forcast: ForcastDay[];
+
+  /** Hourly forecast for next 48 hours */
+  hourly: HourlyForecast[];
 };
 
 /**

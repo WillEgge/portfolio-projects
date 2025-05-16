@@ -1,10 +1,26 @@
 "use client";
 
+/**
+ * Theme toggle component for switching between light and dark modes
+ * 
+ * Provides a hydration-safe toggle button for changing the application theme.
+ * Takes care of proper mounting and avoiding layout shifts during hydration.
+ * 
+ * @module ThemeToggle
+ */
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import { Button } from "./ui/button";
 import { MoonIcon, SunIcon } from "lucide-react";
 
+/**
+ * ThemeToggle component for switching between light and dark modes
+ * 
+ * Handles theme switching with proper hydration safety through mounted state.
+ * Different buttons are displayed based on the current theme.
+ * 
+ * @returns Theme toggle button appropriate for the current theme
+ */
 export default function ThemeToggle() {
   const [mounted, setMounted] = useState(false);
   const { setTheme, resolvedTheme } = useTheme();

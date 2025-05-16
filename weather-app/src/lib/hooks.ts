@@ -39,6 +39,7 @@ export function useWeatherData() {
   const [coordinates, setCoordinates] = useState<{lat: number, lon: number} | null>(null);
   const [showInfo, setShowInfo] = useState<boolean>(true);
   const [isGettingLocation, setIsGettingLocation] = useState<boolean>(false);
+  const [customLocationName, setCustomLocationName] = useState<string>("");
 
   // SWR hook for fetching weather data
   const { data: weather, error, isValidating } = useSWR(
@@ -54,8 +55,8 @@ export function useWeatherData() {
   // Determine if we're in a loading state
   const loading = (!weather && !error) || isValidating || isGettingLocation;
   
-  // Get location name from weather data
-  const location = weather?.location || "";
+  // Get location name from weather data or custom set name
+  const location = customLocationName || weather?.location || "";
 
   /**
    * Get user's current location using browser geolocation
@@ -71,6 +72,7 @@ export function useWeatherData() {
         const { latitude, longitude } = position.coords;
         
         setCoordinates({ lat: latitude, lon: longitude });
+        setCustomLocationName(""); // Clear any custom location name
         toast.success("Weather updated for your location");
       } else {
         toast.error("Geolocation is not supported by your browser");
@@ -83,6 +85,23 @@ export function useWeatherData() {
     } finally {
       setIsGettingLocation(false);
     }
+  }, []);
+  
+  /**
+   * Set weather data for a specific location
+   * 
+   * @param lat - Latitude of the location
+   * @param lon - Longitude of the location
+   * @param locationName - Optional name to display for this location
+   */
+  const setLocation = useCallback((lat: number, lon: number, locationName?: string) => {
+    setCoordinates({ lat, lon });
+    if (locationName) {
+      setCustomLocationName(locationName);
+    } else {
+      setCustomLocationName("");
+    }
+    toast.success(`Weather updated for ${locationName || "selected location"}`);
   }, []);
 
   /**
@@ -125,6 +144,7 @@ export function useWeatherData() {
     getUserLocation,
     toggleInfoPanel,
     error,
+    setLocation,
   };
 }
 

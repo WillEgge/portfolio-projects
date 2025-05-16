@@ -1,4 +1,4 @@
-import type { WeatherData, WeatherCondition } from "@/lib/types";
+import type { WeatherData, WeatherCondition, LocationData } from "@/lib/types";
 
 const API_KEY = process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY;
 const BASE_URL = "https://api.openweathermap.org/data/2.5";
@@ -153,4 +153,64 @@ export const getCurrentPosition = (): Promise<GeolocationPosition> => {
       maximumAge: 0,
     });
   });
+};
+
+/**
+ * Search for locations by name using OpenWeatherMap's geocoding API
+ * 
+ * @param query - The search query (city name, state, country, etc.)
+ * @param limit - Maximum number of results to return (default: 5)
+ * @returns Promise resolving to an array of LocationData objects
+ */
+export const searchLocationsByName = async (
+  query: string,
+  limit: number = 5
+): Promise<LocationData[]> => {
+  if (!query.trim()) {
+    return [];
+  }
+
+  try {
+    const response = await fetch(
+      `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(query)}&limit=${limit}&appid=${API_KEY}`
+    );
+
+    if (!response.ok) {
+      throw new Error(`Geocoding API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    // Format and map the API response to our LocationData type
+    return data.map((item: any) => ({
+      // Create a unique ID by combining name, state (if available) and country
+      id: `${item.name}_${item.state || ""}_${item.country}_${item.lat}_${item.lon}`.replace(/\s+/g, ""),
+      name: item.name,
+      state: item.state || undefined,
+      country: item.country,
+      lat: item.lat,
+      lon: item.lon
+    }));
+  } catch (error) {
+    console.error("Error searching for locations:", error);
+    throw new Error("Failed to search for locations. Please try again later.");
+  }
+};
+
+/**
+ * Format a location object into a display string
+ * 
+ * @param location - The location data to format
+ * @returns Formatted location string (e.g., "New York, NY, US")
+ */
+export const formatLocationDisplay = (location: LocationData): string => {
+  const parts = [location.name];
+  
+  if (location.state) {
+    parts.push(location.state);
+  }
+  
+  parts.push(location.country);
+  
+  return parts.join(", ");
 };

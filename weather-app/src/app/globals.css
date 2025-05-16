@@ -115,10 +115,14 @@ html:not([data-theme-loaded=true]) * {
   
   .forecast-day {
     @apply flex flex-col items-center p-3 rounded-md border bg-card hover:bg-accent/50 transition-colors;
+    animation: fadeInUp 0.5s ease-out forwards;
+    opacity: 0;
   }
   
   .forecast-hour {
     @apply flex flex-col items-center p-3 rounded-md border bg-card hover:bg-accent/50 transition-colors;
+    animation: fadeInUp 0.5s ease-out forwards;
+    opacity: 0;
   }
   
   /* Animations for weather conditions */
@@ -154,4 +158,16 @@ html:not([data-theme-loaded=true]) * {
 
 .animate-spin-slow {
   animation: spin-slow 5s linear infinite;
+}
+
+/* Fade in up animation for weather components */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

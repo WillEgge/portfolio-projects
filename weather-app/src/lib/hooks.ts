@@ -8,6 +8,7 @@ import { getCurrentPosition, getWeatherFromCoords } from "@/lib/api/weather";
  * Default coordinates (New York City) to use when geolocation fails
  */
 const DEFAULT_COORDS = { lat: 40.7128, lon: -74.0060 };
+const DEFAULT_LOCATION_NAME = "New York City, US";
 
 /**
  * Custom fetcher for SWR that includes error handling
@@ -32,6 +33,7 @@ const weatherFetcher = async ([_, lat, lon]: [string, number, number]): Promise<
  * - Getting user's location via geolocation
  * - Handling loading and error states
  * - Controlling info panel visibility
+ * - Error recovery with retry functionality
  * 
  * @returns Weather data and control functions
  */
@@ -42,26 +44,39 @@ export function useWeatherData() {
   const [customLocationName, setCustomLocationName] = useState<string>("");
 
   // SWR hook for fetching weather data
-  const { data: weather, error, isValidating } = useSWR(
+  const { data: weather, error, isValidating, mutate } = useSWR(
     coordinates ? ['weather', coordinates.lat, coordinates.lon] : null,
     weatherFetcher,
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
       refreshInterval: 300000, // Refresh every 5 minutes
+      onError: (err) => {
+        console.error("Weather data fetch error:", err);
+      }
     }
   );
+
+  // Flag to track if geolocation has successfully completed
+  const [geolocated, setGeolocated] = useState<boolean>(false);
+  // Flag to track if a user has performed a search
+  const [userHasSearched, setUserHasSearched] = useState<boolean>(false);
 
   // Determine if we're in a loading state
   const loading = (!weather && !error) || isValidating || isGettingLocation;
   
-  // Get location name from weather data or custom set name
-  const location = customLocationName || weather?.location || "";
+  // Get location name from weather data, custom set name, or loading placeholder
+  const location = isGettingLocation 
+    ? "Getting your location..." 
+    : (customLocationName || weather?.location || (coordinates && !customLocationName ? "Loading weather data..." : ""));
 
   /**
    * Get user's current location using browser geolocation
    */
   const getUserLocation = useCallback(async () => {
+    // If we're already getting location, don't trigger another request
+    if (isGettingLocation) return;
+    
     setIsGettingLocation(true);
     
     try {
@@ -73,19 +88,22 @@ export function useWeatherData() {
         
         setCoordinates({ lat: latitude, lon: longitude });
         setCustomLocationName(""); // Clear any custom location name
+        setGeolocated(true); // Mark that geolocation succeeded 
         toast.success("Weather updated for your location");
       } else {
         toast.error("Geolocation is not supported by your browser");
         setCoordinates(DEFAULT_COORDS);
+        setCustomLocationName(DEFAULT_LOCATION_NAME);
       }
     } catch (error) {
       console.error("Geolocation error:", error);
       toast.error("Could not get your location. Check browser permissions.");
       setCoordinates(DEFAULT_COORDS);
+      setCustomLocationName(DEFAULT_LOCATION_NAME);
     } finally {
       setIsGettingLocation(false);
     }
-  }, []);
+  }, [isGettingLocation]);
   
   /**
    * Set weather data for a specific location
@@ -101,40 +119,75 @@ export function useWeatherData() {
     } else {
       setCustomLocationName("");
     }
+    
+    // Mark that the user has explicitly searched for a location
+    setUserHasSearched(true);
+    
     toast.success(`Weather updated for ${locationName || "selected location"}`);
   }, []);
 
   /**
    * Toggle the visibility of the info panel
    */
-  const toggleInfoPanel = () => {
+  const toggleInfoPanel = useCallback(() => {
     setShowInfo((prev) => !prev);
-  };
+  }, []);
+
+  /**
+   * Retry fetching weather data after an error
+   * 
+   * Triggers a refresh of the weather data and shows appropriate toast messages
+   */
+  const retryFetch = useCallback(async () => {
+    const toastId = toast.loading("Refreshing weather data...");
+    try {
+      await mutate(); // Trigger a re-fetch with SWR
+      toast.success("Weather data refreshed", { id: toastId });
+    } catch (error) {
+      toast.error("Failed to refresh weather data", { id: toastId });
+      console.error("Retry error:", error);
+    }
+  }, [mutate]);
 
   // Effect to get initial location on component mount
   useEffect(() => {
-    // Try to get user's location on first load
-    getUserLocation();
-    
-    // Fallback to default location after a timeout if geolocation fails
-    const fallbackTimer = setTimeout(() => {
-      if (!coordinates) {
-        setCoordinates(DEFAULT_COORDS);
-        toast.info("Using default location. Enable location services for local weather.");
-      }
-    }, 3000);
-    
-    return () => clearTimeout(fallbackTimer);
+    // Only try to get location on first load if the user hasn't already searched
+    if (!userHasSearched && !coordinates && !geolocated) {
+      getUserLocation();
+      
+      // Fallback to default location only after a timeout (1 minute)
+      // This gives reasonable time for geolocation to complete or for the user to search
+      const fallbackTimer = setTimeout(() => {
+        // Only apply the fallback if:
+        // 1. We still don't have coordinates set (no location determined yet)
+        // 2. Geolocation hasn't succeeded 
+        // 3. User hasn't performed their own search
+        if (!coordinates && !geolocated && !userHasSearched) {
+          setCoordinates(DEFAULT_COORDS);
+          setCustomLocationName(DEFAULT_LOCATION_NAME);
+          toast.info("Unable to get your location. Using default location instead.");
+        }
+      }, 60000); // 1 minute
+      
+      return () => clearTimeout(fallbackTimer);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [userHasSearched, geolocated]);
 
-  // Handle errors from SWR
+  // Handle errors from SWR with simple toast message
   useEffect(() => {
     if (error) {
-      toast.error("Could not fetch weather data. Please try again later.");
+      toast.error(`Failed to fetch weather data: ${error.message || "Please check your connection and try again."}`, {
+        duration: 6000, // Show for longer
+        id: "weather-fetch-error", // Prevent duplicate toasts
+        action: {
+          label: "Retry",
+          onClick: () => retryFetch()
+        }
+      });
       console.error("Weather data error:", error);
     }
-  }, [error]);
+  }, [error, retryFetch]);
 
   return {
     loading,
@@ -145,6 +198,10 @@ export function useWeatherData() {
     toggleInfoPanel,
     error,
     setLocation,
+    retryFetch,
+    isGettingLocation,
+    userHasSearched,
+    geolocated
   };
 }
 
@@ -155,32 +212,48 @@ export function useWeatherData() {
  * - Current temperature unit (metric/imperial)
  * - Function to toggle between units
  * - Function to format temperature display
+ * - Persists user preference in localStorage
  * 
  * @returns Temperature unit state and utility functions
  */
 export function useTemperatureUnit() {
-  const [unit, setUnit] = useState<TemperatureUnit>("metric");
+  const [unit, setUnit] = useState<TemperatureUnit>(() => {
+    // Try to get user's preference from localStorage
+    if (typeof window !== 'undefined') {
+      const savedUnit = localStorage.getItem('weatherapp_temp_unit');
+      return (savedUnit === 'imperial' || savedUnit === 'metric') 
+        ? savedUnit 
+        : 'metric'; // Default to metric if no valid saved preference
+    }
+    return 'metric'; // Default value
+  });
 
   /**
    * Toggle between metric (°C) and imperial (°F) units
+   * and save preference to localStorage
    */
-  const toggleUnit = () => {
-    setUnit((prev: TemperatureUnit) =>
-      prev === "metric" ? "imperial" : "metric"
-    );
-  };
-
+  const toggleUnit = useCallback(() => {
+    setUnit((prev: TemperatureUnit) => {
+      const newUnit = prev === "metric" ? "imperial" : "metric";
+      // Save to localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('weatherapp_temp_unit', newUnit);
+      }
+      return newUnit;
+    });
+  }, []);
+  
   /**
    * Format a temperature for display in the current unit
    * 
    * @param temp - Temperature in metric units (Celsius)
    * @returns Formatted temperature string with unit symbol
    */
-  const displayTemp = (temp: number): string => {
+  const displayTemp = useCallback((temp: number): string => {
     return unit === "imperial"
       ? `${Math.round((temp * 9) / 5 + 32)}°F`
       : `${Math.round(temp)}°C`;
-  };
+  }, [unit]);
 
   return { unit, toggleUnit, displayTemp };
 }

@@ -16,6 +16,9 @@ export interface WeatherIconProps {
   
   /** Optional CSS class name to apply to the icon */
   className?: string;
+
+  /** Icon size variant - default is standard size, sm is smaller */
+  size?: "standard" | "sm";
 }
 
 /**
@@ -29,7 +32,11 @@ export interface WeatherIconProps {
  * <WeatherIcon condition="rain" className="w-8 h-8" />
  * ```
  */
-export function WeatherIcon({ condition, className = "weather-icon" }: WeatherIconProps) {
+export function WeatherIcon({ 
+  condition, 
+  className = "weather-icon", 
+  size = "standard" 
+}: WeatherIconProps) {
   // Determine which animation class to apply based on the condition
   const getAnimationClass = (condition: WeatherCondition) => {
     switch (condition) {
@@ -41,8 +48,9 @@ export function WeatherIcon({ condition, className = "weather-icon" }: WeatherIc
     }
   };
   
-  // Combine the base class with the animation class
-  const iconClass = `${className} ${getAnimationClass(condition)}`;
+  // Combine the base class with the animation class and size class
+  const sizeClass = size === "sm" ? "w-8 h-8" : "w-12 h-12";
+  const iconClass = `${className} ${getAnimationClass(condition)} ${sizeClass}`;
   
   // Return the appropriate icon based on condition
   switch (condition) {

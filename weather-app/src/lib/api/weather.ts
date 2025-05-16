@@ -1,4 +1,4 @@
-import type { WeatherData, WeatherCondition, LocationData } from "@/lib/types";
+import type { WeatherData, WeatherCondition, LocationData, HourlyForecast } from "@/lib/types";
 
 const API_KEY = process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY;
 const BASE_URL = "https://api.openweathermap.org/data/2.5";
@@ -27,58 +27,43 @@ const formatDay = (timestamp: number): string => {
   return new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(date);
 };
 
-// Get current weather data
-export async function getCurrentWeather(
-  coords: Coordinates
-): Promise<WeatherData> {
-  const { lat, lon } = coords;
-  
-  // First, fetch current weather
-  const currentRes = await fetch(
-    `${BASE_URL}/weather?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}`
-  );
-  
-  if (!currentRes.ok) {
-    throw new Error("Failed to fetch current weather data");
-  }
-  
-  const currentData = await currentRes.json();
-  
-  // Then, fetch 5-day forecast
-  const forecastRes = await fetch(
-    `${BASE_URL}/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}`
-  );
-  
-  if (!forecastRes.ok) {
-    throw new Error("Failed to fetch forecast data");
-  }
-  
-  const forecastData = await forecastRes.json();
-  
-  // Process forecast data to get daily forecasts (one per day)
-  const dailyForecasts = processForecastData(forecastData.list);
-  
-  // Map the API data to our app's data structure
-  return {
-    location: currentData.name,
-    current: {
-      temp: currentData.main.temp,
-      feels_like: currentData.main.feels_like,
-      humidity: currentData.main.humidity,
-      wind_speed: currentData.wind.speed,
-      weather: currentData.weather[0].main,
-      icon: mapWeatherCondition(currentData.weather[0].id),
-    },
-    forcast: dailyForecasts.map((day) => ({
-      date: day.day,
-      temp: day.temp,
-      icon: day.icon,
-    })),
-  };
+// Format time from timestamp (e.g., "9AM")
+const formatTime = (timestamp: number): string => {
+  const date = new Date(timestamp * 1000);
+  return new Intl.DateTimeFormat("en-US", { 
+    hour: "numeric",
+    hour12: true
+  }).format(date);
+};
+
+/**
+ * Process hourly forecast data from the 5-day forecast API
+ * 
+ * @param forecastList - Array of 3-hour forecast data points
+ * @returns Processed array of hourly forecasts (for the next 24 hours)
+ */
+function processHourlyData(forecastList: any[]): HourlyForecast[] {
+  // Take the first 8 items (24 hours) from the 3-hour forecast
+  return forecastList.slice(0, 8).map((item) => ({
+    time: item.dt,
+    formattedTime: formatTime(item.dt),
+    temp: item.main.temp,
+    feels_like: item.main.feels_like,
+    pop: item.pop || 0, // Probability of precipitation (0-1)
+    humidity: item.main.humidity,
+    wind_speed: item.wind.speed,
+    icon: mapWeatherCondition(item.weather[0].id),
+    description: item.weather[0].description,
+  }));
 }
 
-// Process forecast data to get one forecast per day
-function processForecastData(forecastList: any[]) {
+/**
+ * Process daily forecast data from the 5-day forecast API
+ * 
+ * @param forecastList - Array of 3-hour forecast data points
+ * @returns Processed array of daily forecasts
+ */
+function processDailyData(forecastList: any[]) {
   const today = new Date().getDate();
   const dailyData: { [key: string]: { temps: number[], icons: number[] } } = {};
   
@@ -121,7 +106,7 @@ function processForecastData(forecastList: any[]) {
     });
     
     return {
-      day,
+      date: day,
       temp: avgTemp,
       icon: mapWeatherCondition(mostCommonIcon),
     };
@@ -131,12 +116,64 @@ function processForecastData(forecastList: any[]) {
   return result.slice(0, 5);
 }
 
+/**
+ * Get comprehensive weather data including current, hourly, and 5-day forecast
+ * Using the free OpenWeatherMap API endpoints
+ * 
+ * @param coords - Latitude and longitude coordinates
+ * @returns Promise resolving to complete weather data
+ */
+async function getFullWeatherData(coords: Coordinates): Promise<WeatherData> {
+  const { lat, lon } = coords;
+  
+  // First, fetch current weather data
+  const currentRes = await fetch(
+    `${BASE_URL}/weather?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}`
+  );
+  
+  if (!currentRes.ok) {
+    throw new Error("Failed to fetch current weather data");
+  }
+  
+  const currentData = await currentRes.json();
+  
+  // Then, fetch 5-day forecast (includes hourly data in 3-hour increments)
+  const forecastRes = await fetch(
+    `${BASE_URL}/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}`
+  );
+  
+  if (!forecastRes.ok) {
+    throw new Error("Failed to fetch forecast data");
+  }
+  
+  const forecastData = await forecastRes.json();
+  
+  // Process forecast data to get hourly and daily forecasts
+  const hourlyData = processHourlyData(forecastData.list);
+  const dailyData = processDailyData(forecastData.list);
+  
+  // Return comprehensive weather data
+  return {
+    location: currentData.name,
+    current: {
+      temp: currentData.main.temp,
+      feels_like: currentData.main.feels_like,
+      humidity: currentData.main.humidity,
+      wind_speed: currentData.wind.speed,
+      weather: currentData.weather[0].main,
+      icon: mapWeatherCondition(currentData.weather[0].id),
+    },
+    forcast: dailyData,
+    hourly: hourlyData,
+  };
+}
+
 // Get weather from coordinates
 export const getWeatherFromCoords = async (
   lat: number, 
   lon: number
 ): Promise<WeatherData> => {
-  return getCurrentWeather({ lat, lon });
+  return getFullWeatherData({ lat, lon });
 };
 
 // Get coordinates from browser geolocation

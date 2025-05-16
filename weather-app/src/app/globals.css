@@ -117,6 +117,10 @@ html:not([data-theme-loaded=true]) * {
     @apply flex flex-col items-center p-3 rounded-md border bg-card hover:bg-accent/50 transition-colors;
   }
   
+  .forecast-hour {
+    @apply flex flex-col items-center p-3 rounded-md border bg-card hover:bg-accent/50 transition-colors;
+  }
+  
   /* Animations for weather conditions */
   .animate-rain {
     @apply animate-bounce opacity-70;

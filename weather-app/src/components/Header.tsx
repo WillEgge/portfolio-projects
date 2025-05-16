@@ -1,11 +1,27 @@
 "use client";
 
+/**
+ * Header component for the application
+ * 
+ * Provides the app title, logo, and theme toggle button.
+ * Contains the navigation and branding for the app.
+ * 
+ * @module Header
+ */
 import Link from "next/link";
 import { MoonIcon, SunIcon, CloudRainIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 
+/**
+ * Application header with logo and theme toggle
+ * 
+ * Rendered at the top of every page, providing consistent navigation and theme controls.
+ * Implements hydration-safe theme toggle functionality.
+ * 
+ * @returns The header component with logo and theme controls
+ */
 export default function Header() {
   const { setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);

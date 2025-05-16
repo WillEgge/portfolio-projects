@@ -92,3 +92,46 @@ export type WeatherData = {
   /** 5-day weather forecast */
   forcast: ForcastDay[];
 };
+
+/**
+ * Location information returned from geocoding API
+ */
+export type LocationData = {
+  /** Unique identifier for the location (city ID or constructed unique string) */
+  id: string;
+  
+  /** Name of the city/town */
+  name: string;
+  
+  /** State or province (if available) */
+  state?: string;
+  
+  /** Country code (ISO 3166 country codes) */
+  country: string;
+  
+  /** Latitude coordinate */
+  lat: number;
+  
+  /** Longitude coordinate */
+  lon: number;
+};
+
+/**
+ * Structure for storing a saved location in favorites/history
+ */
+export type SavedLocation = {
+  /** Unique identifier for the location */
+  id: string;
+  
+  /** Display name (typically city, state, country format) */
+  displayName: string;
+  
+  /** Latitude coordinate */
+  lat: number;
+  
+  /** Longitude coordinate */
+  lon: number;
+  
+  /** ISO timestamp when this location was added/last accessed */
+  timestamp: string;
+};

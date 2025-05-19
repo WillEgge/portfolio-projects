@@ -152,15 +152,6 @@ This application is configured for easy deployment to Vercel:
 4. **Deploy:** Vercel will automatically build and deploy your application
 5. **Custom Domain:** Optionally, configure a custom domain in the Vercel dashboard
 
-## Future Enhancements
-
-- **Weather Maps:** Interactive maps showing precipitation, temperature, and wind patterns
-- **Weather Alerts:** Real-time alerts for severe weather conditions
-- **Historical Data:** View and compare historical weather data
-- **Multiple Location Dashboard:** Monitor weather in multiple locations simultaneously
-- **Weather-Based Recommendations:** Clothing and activity suggestions based on conditions
-- **PWA Support:** Offline capabilities and installable app experience
-
 ## License
 
 MIT

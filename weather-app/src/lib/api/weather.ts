@@ -121,14 +121,16 @@ function processDailyData(forecastList: any[]) {
  * Using the free OpenWeatherMap API endpoints
  * 
  * @param coords - Latitude and longitude coordinates
+ * @param signal - Optional AbortSignal for cancelling the request
  * @returns Promise resolving to complete weather data
  */
-async function getFullWeatherData(coords: Coordinates): Promise<WeatherData> {
+async function getFullWeatherData(coords: Coordinates, signal?: AbortSignal): Promise<WeatherData> {
   const { lat, lon } = coords;
   
   // First, fetch current weather data
   const currentRes = await fetch(
-    `${BASE_URL}/weather?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}`
+    `${BASE_URL}/weather?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}`,
+    { signal }
   );
   
   if (!currentRes.ok) {
@@ -139,7 +141,8 @@ async function getFullWeatherData(coords: Coordinates): Promise<WeatherData> {
   
   // Then, fetch 5-day forecast (includes hourly data in 3-hour increments)
   const forecastRes = await fetch(
-    `${BASE_URL}/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}`
+    `${BASE_URL}/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}`,
+    { signal }
   );
   
   if (!forecastRes.ok) {
@@ -171,9 +174,10 @@ async function getFullWeatherData(coords: Coordinates): Promise<WeatherData> {
 // Get weather from coordinates
 export const getWeatherFromCoords = async (
   lat: number, 
-  lon: number
+  lon: number,
+  signal?: AbortSignal
 ): Promise<WeatherData> => {
-  return getFullWeatherData({ lat, lon });
+  return getFullWeatherData({ lat, lon }, signal);
 };
 
 // Get coordinates from browser geolocation

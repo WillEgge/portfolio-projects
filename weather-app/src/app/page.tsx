@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * Weather App Main Page Component
  * 
@@ -11,8 +13,6 @@
  * 
  * @module page
  */
-
-"use client";
 
 import { toast } from "sonner";
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -32,6 +32,8 @@ import {
   Umbrella,
   ChevronRight,
   ChevronLeft,
+  RotateCw,
+  AlertCircle,
 } from "lucide-react";
 import {
   useWeatherData,
@@ -60,6 +62,7 @@ import type { LocationData, SavedLocation } from "@/lib/types";
 export default function Home() {
   /* ===== State Management ===== */
   // Core state from custom hooks
+  // Destructure the new isPendingRequest state from the hook
   const {
     loading,
     weather,
@@ -68,6 +71,12 @@ export default function Home() {
     getUserLocation,
     toggleInfoPanel,
     setLocation,
+    error,
+    retryFetch,
+    isGettingLocation,
+    userHasSearched,
+    geolocated,
+    isPendingRequest
   } = useWeatherData();
   const { unit, toggleUnit, displayTemp } = useTemperatureUnit();
   
@@ -75,6 +84,14 @@ export default function Home() {
   const [showFavorites, setShowFavorites] = useState<boolean>(false);
   const [hourlyPage, setHourlyPage] = useState<number>(0);
   const hoursPerPage = 6; // Number of hours to show per page
+  
+  // Client-only state for temperature unit to prevent hydration errors
+  const [isMounted, setIsMounted] = useState<boolean>(false);
+  
+  // Mount effect to prevent hydration mismatch with localStorage
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
   
   /* ===== Location Search State ===== */
   // Search query and results state
@@ -322,7 +339,7 @@ export default function Home() {
             TypeScript. View current weather conditions and a 5-day forecast
             based on your location.
           </p>
-          <div className="flex items-center text-sm text-muted-foreground">
+          <div className="flex items-center text-sm text-muted-foreground mt-4">
             <InfoIcon className="w-4 h-4 mr-2" />
             <span>This is a portfolio project with real weather data.</span>
           </div>
@@ -345,7 +362,6 @@ export default function Home() {
               onChange={handleSearchChange}
               onFocus={() => setShowDropdown(true)}
               className="flex-1 py-2 px-3 bg-transparent outline-none"
-              disabled={loading}
               aria-label="Location search"
             />
             {searchQuery && (
@@ -477,9 +493,14 @@ export default function Home() {
       <section className="my-6">
         <div className="flex flex-col md:flex-row md:items-center gap-4">
           <div className="flex items-center gap-2">
-            <MapPinIcon className="text-primary" />
+            <MapPinIcon className={`text-primary ${isGettingLocation ? 'animate-pulse' : ''}`} />
             {loading ? (
-              <Skeleton className="h-8 w-40" />
+              <div className="flex flex-col">
+                <h2 className="text-2xl font-bold">{location}</h2>
+                <span className="text-xs text-muted-foreground animate-pulse">
+                  {isGettingLocation ? "Detecting your location..." : "Loading weather data..."}
+                </span>
+              </div>
             ) : (
               <h2 className="text-2xl font-bold">{location}</h2>
             )}
@@ -495,11 +516,18 @@ export default function Home() {
             >
               <StarIcon size={18} className={showFavorites ? "text-yellow-400" : ""} />
             </Button>
-            <Button variant="outline" onClick={toggleUnit} disabled={loading}>
-              {unit === "metric" ? "Switch to °F" : "Switch to °C"}
-            </Button>
-            <Button onClick={getUserLocation} disabled={loading}>
-              My Location
+            {/* Only render the temperature unit button client-side to prevent hydration errors */}
+            {isMounted ? (
+              <Button variant="outline" onClick={toggleUnit} disabled={loading}>
+                {unit === "metric" ? "Switch to °F" : "Switch to °C"}
+              </Button>
+            ) : (
+              <Button variant="outline" disabled>
+                Loading...
+              </Button>
+            )}
+            <Button onClick={getUserLocation} disabled={isGettingLocation}>
+              {isGettingLocation ? "Detecting..." : "My Location"}
             </Button>
           </div>
         </div>
@@ -553,11 +581,22 @@ export default function Home() {
       <div className="grid grid-cols-1 gap-8">
         {/* Current Weather Card */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row justify-between items-center">
             <CardTitle>Current Weather</CardTitle>
+            {!loading && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 opacity-70 hover:opacity-100 transition-opacity" 
+                onClick={retryFetch}
+                aria-label="Refresh weather data"
+              >
+                <RotateCw size={16} />
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
-            {loading || !weather ? (
+            {isPendingRequest || loading ? (
               <div className="flex flex-col gap-4">
                 <Skeleton className="h-16 w-16 rounded-full" />
                 <Skeleton className="h-10 w-32" />
@@ -568,7 +607,19 @@ export default function Home() {
                   <Skeleton className="h-8 w-full" />
                 </div>
               </div>
-            ) : (
+            ) : error && error.name !== 'AbortError' ? (
+              <div className="p-6 text-center">
+                <div className="inline-flex justify-center items-center w-12 h-12 rounded-full bg-destructive/10 text-destructive mb-4">
+                  <AlertCircle />
+                </div>
+                <h3 className="font-medium mb-2">Failed to load weather data</h3>
+                <p className="text-sm text-muted-foreground mb-4">{error.message || "Please check your connection."}</p>
+                <Button onClick={retryFetch}>
+                  <RotateCw size={16} className="mr-2" />
+                  Retry
+                </Button>
+              </div>
+            ) : weather ? (
               <div className="flex flex-col gap-4">
                 <div className="flex items-center gap-3">
                   <WeatherIcon condition={weather.current.icon} />
@@ -590,6 +641,10 @@ export default function Home() {
                   </div>
                 </div>
               </div>
+            ) : (
+              <div className="flex justify-center items-center p-8">
+                <p className="text-muted-foreground">No weather data available</p>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -598,96 +653,163 @@ export default function Home() {
         <Card>
           <CardHeader className="flex flex-row justify-between items-center pb-2">
             <CardTitle>Hourly Forecast</CardTitle>
-            <div className="flex items-center">
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8"
-                onClick={handlePrevHourlyPage}
-                disabled={hourlyPage === 0 || loading || !weather}
-                aria-label="Previous hours"
-              >
-                <ChevronLeft size={16} />
-              </Button>
-              <span className="mx-2 text-sm text-muted-foreground">
-                {hourlyPage + 1}/{maxHourlyPage + 1}
-              </span>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8"
-                onClick={handleNextHourlyPage}
-                disabled={hourlyPage >= maxHourlyPage || loading || !weather}
-                aria-label="Next hours"
-              >
-                <ChevronRight size={16} />
-              </Button>
+            <div className="flex items-center gap-2">
+              {!loading && !error && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 opacity-70 hover:opacity-100 transition-opacity" 
+                  onClick={retryFetch}
+                  aria-label="Refresh weather data"
+                >
+                  <RotateCw size={16} />
+                </Button>
+              )}
+              <div className="flex items-center">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={handlePrevHourlyPage}
+                  disabled={hourlyPage === 0 || loading || !weather || !!error}
+                  aria-label="Previous hours"
+                >
+                  <ChevronLeft size={16} />
+                </Button>
+                <span className="mx-2 text-sm text-muted-foreground">
+                  {hourlyPage + 1}/{maxHourlyPage + 1}
+                </span>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={handleNextHourlyPage}
+                  disabled={hourlyPage >= maxHourlyPage || loading || !weather || !!error}
+                  aria-label="Next hours"
+                >
+                  <ChevronRight size={16} />
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mt-2">
-              {loading || !weather
-                ? Array(6)
-                    .fill(null)
-                    .map((_, index) => (
-                      <Skeleton key={index} className="h-36 w-full" />
-                    ))
-                : currentHourlyItems.map((hour, index) => (
-                    <div 
-                      key={index} 
-                      className="forecast-hour p-3 rounded-lg border bg-card text-card-foreground transition-colors hover:bg-accent"
-                    >
-                      <div className="text-center font-medium mb-2">{hour.formattedTime}</div>
-                      <div className="flex justify-center mb-2">
-                        <WeatherIcon condition={hour.icon} size="sm" />
+            {isPendingRequest || loading ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mt-2">
+                {Array(6)
+                  .fill(null)
+                  .map((_, index) => (
+                    <Skeleton key={index} className="h-36 w-full" />
+                  ))}
+              </div>
+            ) : error && error.name !== 'AbortError' ? (
+              <div className="p-6 text-center">
+                <div className="inline-flex justify-center items-center w-12 h-12 rounded-full bg-destructive/10 text-destructive mb-4">
+                  <AlertCircle />
+                </div>
+                <h3 className="font-medium mb-2">Failed to load hourly forecast</h3>
+                <p className="text-sm text-muted-foreground mb-4">{error.message || "Please check your connection."}</p>
+                <Button onClick={retryFetch}>
+                  <RotateCw size={16} className="mr-2" />
+                  Retry
+                </Button>
+              </div>
+            ) : weather ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mt-2">
+                {currentHourlyItems.map((hour, index) => (
+                  <div 
+                    key={index} 
+                    className="forecast-hour p-3 rounded-lg border bg-card text-card-foreground transition-colors hover:bg-accent"
+                    style={{ animationDelay: `${index * 100}ms` }}
+                  >
+                    <div className="text-center font-medium mb-2">{hour.formattedTime}</div>
+                    <div className="flex justify-center mb-2">
+                      <WeatherIcon condition={hour.icon} size="sm" />
+                    </div>
+                    <div className="text-center font-bold mb-1">
+                      {displayTemp(hour.temp)}
+                    </div>
+                    <div className="text-xs text-center text-muted-foreground mb-2">
+                      Feels like {displayTemp(hour.feels_like)}
+                    </div>
+                    <div className="grid grid-cols-2 gap-1 text-xs">
+                      <div className="flex items-center justify-center gap-1">
+                        <Umbrella size={12} />
+                        <span>{Math.round(hour.pop * 100)}%</span>
                       </div>
-                      <div className="text-center font-bold mb-1">
-                        {displayTemp(hour.temp)}
-                      </div>
-                      <div className="text-xs text-center text-muted-foreground mb-2">
-                        Feels like {displayTemp(hour.feels_like)}
-                      </div>
-                      <div className="grid grid-cols-2 gap-1 text-xs">
-                        <div className="flex items-center justify-center gap-1">
-                          <Umbrella size={12} />
-                          <span>{Math.round(hour.pop * 100)}%</span>
-                        </div>
-                        <div className="flex items-center justify-center gap-1">
-                          <WindIcon size={12} />
-                          <span>{Math.round(hour.wind_speed)} km/h</span>
-                        </div>
+                      <div className="flex items-center justify-center gap-1">
+                        <WindIcon size={12} />
+                        <span>{Math.round(hour.wind_speed)} km/h</span>
                       </div>
                     </div>
-                  ))}
-            </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex justify-center items-center p-8">
+                <p className="text-muted-foreground">No forecast data available</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Forecast Card */}
+        {/* 5-Day Forecast Card */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row justify-between items-center">
             <CardTitle>5-Day Forecast</CardTitle>
+            {!loading && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 opacity-70 hover:opacity-100 transition-opacity" 
+                onClick={retryFetch}
+                aria-label="Refresh weather data"
+              >
+                <RotateCw size={16} />
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-2">
-              {loading || !weather
-                ? Array(5)
-                    .fill(null)
-                    .map((_, index) => (
-                      <Skeleton key={index} className="h-32 w-full" />
-                    ))
-                : weather.forcast.map((day, index) => (
-                    <div key={index} className="forecast-day">
-                      <div className="font-medium">{day.date}</div>
-                      <div className="my-2 flex justify-center">
-                        <WeatherIcon condition={day.icon} />
-                      </div>
-                      <div className="temperature-small text-center">
-                        {displayTemp(day.temp)}
-                      </div>
-                    </div>
+            {isPendingRequest || loading ? (
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-2">
+                {Array(5)
+                  .fill(null)
+                  .map((_, index) => (
+                    <Skeleton key={index} className="h-32 w-full" />
                   ))}
-            </div>
+              </div>
+            ) : error && error.name !== 'AbortError' ? (
+              <div className="p-6 text-center">
+                <div className="inline-flex justify-center items-center w-12 h-12 rounded-full bg-destructive/10 text-destructive mb-4">
+                  <AlertCircle />
+                </div>
+                <h3 className="font-medium mb-2">Failed to load forecast data</h3>
+                <p className="text-sm text-muted-foreground mb-4">{error.message || "Please check your connection."}</p>
+                <Button onClick={retryFetch}>
+                  <RotateCw size={16} className="mr-2" />
+                  Retry
+                </Button>
+              </div>
+            ) : weather ? (
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-2">
+                {weather.forcast.map((day, index) => (
+                  <div key={index} className="forecast-day" style={{
+                    animationDelay: `${index * 100}ms`
+                  }}>
+                    <div className="font-medium">{day.date}</div>
+                    <div className="my-2 flex justify-center">
+                      <WeatherIcon condition={day.icon} />
+                    </div>
+                    <div className="temperature-small text-center">
+                      {displayTemp(day.temp)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex justify-center items-center p-8">
+                <p className="text-muted-foreground">No forecast data available</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
